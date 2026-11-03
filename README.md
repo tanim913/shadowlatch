@@ -1,8 +1,17 @@
 # Shadowlatch
 
-Temporary chat rooms for moving text and code between devices. Open a room, share the 12-character code, paste. One hour after the last message the room is deleted.
+**Live site: [tanim913.github.io/shadowlatch](https://tanim913.github.io/shadowlatch/)**
 
-Static site (GitHub Pages) + Firebase (Firestore + Anonymous Auth). No server, no build step.
+Temporary chat rooms for moving text and code between devices. Open a room, share the 12-character code, and paste. One hour after the last message the room is deleted. No accounts.
+
+Static site (GitHub Pages) with Firebase (Firestore and anonymous sign-in) behind it. No server and no build step.
+
+## How to use it
+
+1. Open the [live site](https://tanim913.github.io/shadowlatch/) and press **Open a new room**.
+2. Send the invite link or the code to your other device or to a friend.
+3. Paste text, or switch to **Code** to send a block with a copy button. Messages show up for everyone in the room straight away.
+4. Press **Burn** to delete the room immediately, or leave it and it deletes itself an hour after the last message.
 
 ## Security model
 
