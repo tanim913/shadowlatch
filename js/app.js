@@ -15,7 +15,7 @@ const $ = (id) => document.getElementById(id);
 const el = {
   body: document.body,
   home: $("view-home"), room: $("view-room"), ended: $("view-ended"),
-  tools: $("room-tools"), code: $("room-code"), copyLink: $("copy-link"),
+  tools: $("room-tools"), code: $("room-code"), copyCode: $("copy-code"), copyLink: $("copy-link"), emptyCopyCode: $("empty-copy-code"),
   expiry: $("expiry"), expiryTime: $("expiry-time"),
   burn: $("burn"), leave: $("leave"), burnDialog: $("burn-dialog"),
   create: $("create"), joinForm: $("join-form"), joinCode: $("join-code"), joinBtn: $("join-btn"), joinMsg: $("join-msg"),
@@ -272,7 +272,14 @@ function buildMessage(id, d) {
       lab.textContent = "Copied";
       setTimeout(() => (lab.textContent = "Copy"), 1500);
     });
-    bar.append(label, btn);
+    const tools = document.createElement("div");
+    tools.className = "code__tools";
+    const wrapBtn = document.createElement("button");
+    wrapBtn.type = "button"; wrapBtn.className = "code__copy code__wrap"; wrapBtn.textContent = "Wrap"; wrapBtn.setAttribute("aria-pressed", "false");
+    const expandBtn = document.createElement("button");
+    expandBtn.type = "button"; expandBtn.className = "code__copy code__expand"; expandBtn.textContent = "Expand"; expandBtn.hidden = true; expandBtn.setAttribute("aria-pressed", "false");
+    tools.append(wrapBtn, expandBtn, btn);
+    bar.append(label, tools);
     const pre = document.createElement("pre");
     pre.tabIndex = 0;
     const code = document.createElement("code");
@@ -282,6 +289,22 @@ function buildMessage(id, d) {
     li.append(fig);
   }
   return li;
+}
+
+// Code blocks: lines wrap by default on phones (so nothing is cut off at the edge) and scroll sideways on
+// wide screens; Wrap flips that, Expand lifts the height cap on tall blocks. Copy always copies the original.
+function setupCode(fig) {
+  const pre = fig.querySelector("pre"), wrapBtn = fig.querySelector(".code__wrap"), expandBtn = fig.querySelector(".code__expand");
+  const sync = () => { expandBtn.hidden = !(fig.classList.contains("is-expanded") || pre.scrollHeight > pre.clientHeight + 1); };
+  const setWrap = (on) => { fig.classList.toggle("is-wrapped", on); wrapBtn.setAttribute("aria-pressed", String(on)); sync(); };
+  setWrap(window.innerWidth < 640);
+  wrapBtn.addEventListener("click", () => setWrap(!fig.classList.contains("is-wrapped")));
+  expandBtn.addEventListener("click", () => {
+    const on = fig.classList.toggle("is-expanded");
+    expandBtn.textContent = on ? "Collapse" : "Expand";
+    expandBtn.setAttribute("aria-pressed", String(on));
+    sync();
+  });
 }
 
 // Long text collapses to 12 lines with a Show more toggle; short text is left alone.
@@ -314,6 +337,7 @@ function renderMessages(s, docs) {
     if (s.initial) node.style.animation = "none";
     el.msgs.append(node);
     node.querySelectorAll(".msg__text").forEach(clampLong);
+    node.querySelectorAll(".code").forEach(setupCode);
   });
   [...el.msgs.children].forEach((n) => { if (!seen.has(n.dataset.id)) n.remove(); });
   s.initial = false;
@@ -401,6 +425,9 @@ el.leave.addEventListener("click", () => { history.replaceState(null, "", locati
 el.endedNew.addEventListener("click", () => { show("home"); createRoom(); });
 
 const inviteLink = () => `${location.origin}${location.pathname}#${session.id}`;
+const roomCode = () => fmtCode(session.id); // just the code, nothing else
+el.copyCode.addEventListener("click", () => session && copyText(roomCode(), "Room code copied"));
+el.emptyCopyCode.addEventListener("click", () => session && copyText(roomCode(), "Room code copied"));
 el.copyLink.addEventListener("click", () => session && copyText(inviteLink(), "Invite link copied"));
 el.emptyCopy.addEventListener("click", () => session && copyText(inviteLink(), "Invite link copied"));
 

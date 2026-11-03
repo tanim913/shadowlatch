@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
   <title>Shadowlatch: rooms that vanish</title>
   <meta name="description" content="Open a room, share the code, pass text and code between devices. An hour after the last message, the room is gone.">
   <meta name="referrer" content="no-referrer">
@@ -42,9 +42,13 @@
     </button>
 
     <div class="room-tools" id="room-tools" hidden>
-      <button class="chip" id="copy-link" type="button" aria-label="Copy invite link">
-        <svg class="ico" aria-hidden="true"><use href="#i-link"/></svg>
+      <button class="chip" id="copy-code" type="button" aria-label="Copy room code">
+        <svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg>
         <span class="chip__code" id="room-code">XXXX-XXXX-XXXX</span>
+      </button>
+      <button class="btn btn--quiet" id="copy-link" type="button" aria-label="Copy invite link">
+        <svg class="ico" aria-hidden="true"><use href="#i-link"/></svg>
+        <span>Link</span>
       </button>
       <p class="expiry" id="expiry" role="timer" aria-live="off">
         <span class="expiry__label">Vanishes in</span>
@@ -99,10 +103,16 @@
         <div class="empty" id="empty">
           <h2>Nothing here yet.</h2>
           <p>Send this code to the device or person who should join. Whatever you paste below shows up for everyone in the room.</p>
-          <button class="btn btn--ink" id="empty-copy" type="button">
-            <svg class="ico" aria-hidden="true"><use href="#i-link"/></svg>
-            <span>Copy invite link</span>
-          </button>
+          <div class="empty__actions">
+            <button class="btn btn--ink" id="empty-copy-code" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg>
+              <span>Copy code</span>
+            </button>
+            <button class="btn" id="empty-copy" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-link"/></svg>
+              <span>Copy invite link</span>
+            </button>
+          </div>
         </div>
         <ol class="msgs" id="msgs"></ol>
       </div>

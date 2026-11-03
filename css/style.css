@@ -94,6 +94,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: clip;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -177,6 +178,7 @@ button { cursor: pointer; }
 }
 .chip:hover { background: var(--paper-lo); }
 .chip__code { font-family: var(--mono); font-weight: 600; font-size: 0.9rem; letter-spacing: 0.04em; }
+.room-tools .btn--quiet { padding-inline: 0.6rem; }
 
 .expiry {
   position: relative;
@@ -299,6 +301,7 @@ main { flex: 1; display: flex; flex-direction: column; }
   display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto;
   width: min(100%, 60rem);
   min-width: 0;
+  overflow-x: clip; /* nothing inside may ever widen the page */
   margin-inline: auto;
 }
 
@@ -306,6 +309,7 @@ main { flex: 1; display: flex; flex-direction: column; }
 
 .empty { max-width: 32rem; margin: clamp(1.5rem, 8vh, 4rem) auto 0; text-align: center; }
 .empty h2 { font-size: clamp(1.75rem, 1rem + 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; color: var(--main); line-height: 1.05; }
+.empty__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
 .empty p { margin: 0.75rem 0 1.5rem; color: var(--ink-soft); text-wrap: pretty; }
 .msgs:not(:empty) ~ .empty, .has-msgs .empty { display: none; }
 
@@ -358,6 +362,10 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 .code__copy:hover { background: var(--paper-lo); }
 .code__copy .ico { width: 1rem; height: 1rem; }
+.code__tools { display: flex; align-items: center; gap: 0.25rem; }
+.code__copy[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.code.is-wrapped pre { white-space: pre-wrap; overflow-wrap: anywhere; overflow-x: hidden; }
+.code.is-expanded pre { max-height: none; }
 .code pre {
   margin: 0; padding: 0.9rem 1rem; max-height: min(28rem, 60vh); overflow: auto; tab-size: 2;
   max-width: 100%; overscroll-behavior: contain;
