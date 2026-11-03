@@ -64,6 +64,7 @@ function show(view) {
   el.room.hidden = view !== "room";
   el.ended.hidden = view !== "ended";
   el.tools.hidden = view !== "room";
+  if (typeof measurePinned === "function") requestAnimationFrame(measurePinned);
   document.title = view === "room" ? "Shadowlatch: room" : "Shadowlatch: rooms that vanish";
   if (view !== "room") setDrift(3, 1);
 }
@@ -291,13 +292,13 @@ function buildMessage(id, d) {
   return li;
 }
 
-// Code blocks: lines wrap by default on phones (so nothing is cut off at the edge) and scroll sideways on
+// Code blocks: lines wrap by default on phones and tablets (so nothing is cut off at the edge) and scroll sideways on
 // wide screens; Wrap flips that, Expand lifts the height cap on tall blocks. Copy always copies the original.
 function setupCode(fig) {
   const pre = fig.querySelector("pre"), wrapBtn = fig.querySelector(".code__wrap"), expandBtn = fig.querySelector(".code__expand");
   const sync = () => { expandBtn.hidden = !(fig.classList.contains("is-expanded") || pre.scrollHeight > pre.clientHeight + 1); };
   const setWrap = (on) => { fig.classList.toggle("is-wrapped", on); wrapBtn.setAttribute("aria-pressed", String(on)); sync(); };
-  setWrap(window.innerWidth < 640);
+  setWrap(window.innerWidth < 640 || matchMedia("(pointer: coarse)").matches); // touch screens: no sideways scrolling inside code
   wrapBtn.addEventListener("click", () => setWrap(!fig.classList.contains("is-wrapped")));
   expandBtn.addEventListener("click", () => {
     const on = fig.classList.toggle("is-expanded");
@@ -317,6 +318,7 @@ function clampLong(p) {
     const open = p.classList.toggle("is-clamped") === false;
     btn.textContent = open ? "Show less" : "Show more";
     btn.setAttribute("aria-expanded", String(open));
+    if (!open && p.getBoundingClientRect().top < 0) p.closest(".msg").scrollIntoView({ block: "start" }); // collapsing a long text: don't strand the reader far below it
   });
   p.after(btn);
 }
@@ -382,7 +384,7 @@ async function sendMessage() {
 
 function autosize() {
   el.draft.style.height = "auto";
-  const share = window.innerWidth < 640 ? 0.28 : 0.4; // leave the chat visible above a long draft on phones
+  const share = window.innerHeight < 500 ? 0.25 : window.innerWidth < 640 ? 0.28 : 0.33; // keep the chat visible above a long draft
   el.draft.style.height = `${Math.min(el.draft.scrollHeight + 4, window.innerHeight * share)}px`;
 }
 function updateSend() { el.send.disabled = !el.draft.value.trim(); }
@@ -474,6 +476,18 @@ el.draft.addEventListener("paste", (e) => {
 
 window.addEventListener("hashchange", route);
 window.addEventListener("resize", () => session && autosize());
+
+/* ---------- pinned bar / composer sizes ---------- */
+
+// The toast and scroll positions need to know how much of the screen the pinned bar and composer cover.
+function measurePinned() {
+  const root = document.documentElement.style, bar = document.querySelector(".bar");
+  root.setProperty("--composer-h", `${el.room.hidden ? 0 : el.composer.offsetHeight}px`);
+  root.setProperty("--bar-cover", `${getComputedStyle(bar).position === "sticky" ? bar.offsetHeight : 0}px`);
+}
+new ResizeObserver(measurePinned).observe(el.composer);
+new ResizeObserver(measurePinned).observe(document.querySelector(".bar"));
+window.addEventListener("resize", measurePinned);
 
 /* ---------- theme ---------- */
 
