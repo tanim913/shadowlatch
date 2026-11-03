@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Shadowlatch: rooms that vanish</title>
+  <meta name="description" content="Open a room, share the code, pass text and code between devices. An hour after the last message, the room is gone.">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#efefed">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23efefed'/%3E%3Crect x='6' y='9' width='17' height='17' fill='%23b9b2a5' fill-opacity='.9'/%3E%3Crect x='9' y='6' width='17' height='17' fill='%233a3f47' fill-opacity='.9'/%3E%3C/svg%3E">
+  <script src="js/theme.js"></script>
+  <link rel="preload" href="fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-view="home">
+  <svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5.5A1.5 1.5 0 0 1 6.5 4H15"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c.5 3-3.5 5-3.5 9a3.5 3.5 0 0 0 7 0c0-1.2-.4-2-1-2.8.2 1.2-.6 2-1.5 2 .6-3-.5-5.6-1-6.2Z"/><path d="M7 14.5C5.9 15.6 5.5 17 6 18.5a6.5 6.5 0 0 0 12 0c.5-1.5.1-2.9-1-4"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M10 4H6.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H10"/><path d="M15 8l4 4-4 4M19 12H9"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></symbol>
+  </svg>
+
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="bar">
+    <a class="mark" href="#" id="home-link" aria-label="Shadowlatch, home">
+      <span class="mark__ink mark__ink--b" aria-hidden="true">Shadowlatch</span>
+      <span class="mark__ink mark__ink--p" aria-hidden="true">Shadowlatch</span>
+      <span class="sr">Shadowlatch</span>
+    </a>
+
+    <button class="theme" id="theme" type="button" aria-label="Switch to dark theme">
+      <svg class="ico i-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+      <svg class="ico i-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+    </button>
+
+    <div class="room-tools" id="room-tools" hidden>
+      <button class="chip" id="copy-link" type="button" aria-label="Copy invite link">
+        <svg class="ico" aria-hidden="true"><use href="#i-link"/></svg>
+        <span class="chip__code" id="room-code">XXXX-XXXX-XXXX</span>
+      </button>
+      <p class="expiry" id="expiry" role="timer" aria-live="off">
+        <span class="expiry__label">Vanishes in</span>
+        <span class="expiry__time" id="expiry-time">60:00</span>
+      </p>
+      <button class="btn btn--quiet" id="burn" type="button">
+        <svg class="ico" aria-hidden="true"><use href="#i-flame"/></svg>
+        <span>Burn</span>
+      </button>
+      <button class="btn btn--quiet" id="leave" type="button">
+        <svg class="ico" aria-hidden="true"><use href="#i-exit"/></svg>
+        <span>Leave</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HOME -->
+    <section class="home" id="view-home" aria-labelledby="home-title">
+      <div class="home__lead">
+        <h1 id="home-title">Hand it over, then let it vanish.</h1>
+        <p class="lead">Open a room, send the code to your other device or your teammate, and paste text or code back and forth. One hour after the last message, the room and everything in it is deleted.</p>
+        <ul class="facts">
+          <li><strong>No accounts.</strong> Nothing to sign up for.</li>
+          <li><strong>The code is the only door.</strong> Rooms can't be listed or searched.</li>
+          <li><strong>Gone in an hour.</strong> Every message resets the clock.</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <button class="btn btn--primary btn--wide" id="create" type="button">
+          <span>Open a new room</span>
+          <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+        </button>
+
+        <p class="panel__or" aria-hidden="true"><span>or join one</span></p>
+
+        <form id="join-form" autocomplete="off" novalidate>
+          <label class="field__label" for="join-code">Room code</label>
+          <div class="field">
+            <input id="join-code" name="code" type="text" inputmode="text" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="14" placeholder="K7QM-X2PD-9RTA" aria-describedby="join-msg">
+            <button class="btn btn--ink" type="submit" id="join-btn">Join</button>
+          </div>
+          <p class="msg-line" id="join-msg" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ROOM -->
+    <section class="room" id="view-room" aria-label="Chat room" hidden>
+      <div class="feed" id="feed" role="log" aria-live="polite" aria-relevant="additions" tabindex="-1">
+        <div class="empty" id="empty">
+          <h2>Nothing here yet.</h2>
+          <p>Send this code to the device or person who should join. Whatever you paste below shows up for everyone in the room.</p>
+          <button class="btn btn--ink" id="empty-copy" type="button">
+            <svg class="ico" aria-hidden="true"><use href="#i-link"/></svg>
+            <span>Copy invite link</span>
+          </button>
+        </div>
+        <ol class="msgs" id="msgs"></ol>
+      </div>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <div class="composer__top">
+          <div class="seg" role="radiogroup" aria-label="Message type">
+            <input type="radio" name="kind" id="kind-text" value="text" checked>
+            <label for="kind-text">Text</label>
+            <input type="radio" name="kind" id="kind-code" value="code">
+            <label for="kind-code">Code</label>
+          </div>
+          <p class="composer__hint" id="hint">Ctrl + Enter to send</p>
+        </div>
+        <div class="composer__row">
+          <label class="sr" for="draft">Message</label>
+          <textarea id="draft" rows="1" maxlength="20000" placeholder="Paste or type something" spellcheck="false" autocapitalize="off"></textarea>
+          <button class="btn btn--primary" id="send" type="submit" disabled>
+            <span>Send</span>
+            <svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ENDED -->
+    <section class="ended" id="view-ended" aria-labelledby="ended-title" hidden>
+      <h2 id="ended-title">This room is gone.</h2>
+      <p id="ended-why">It reached its hour of silence and was deleted.</p>
+      <button class="btn btn--primary" id="ended-new" type="button">Open a new room</button>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <dialog class="dialog" id="burn-dialog" aria-labelledby="burn-title">
+    <form method="dialog">
+      <h2 id="burn-title">Burn this room now?</h2>
+      <p>Everyone in it is cut off and all messages are deleted. This can't be undone.</p>
+      <div class="dialog__actions">
+        <button class="btn btn--quiet" value="cancel">Keep it</button>
+        <button class="btn btn--primary" value="burn" id="burn-confirm">Burn room</button>
+      </div>
+    </form>
+  </dialog>
+
+  <noscript><p class="noscript">Shadowlatch needs JavaScript to talk to its rooms.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

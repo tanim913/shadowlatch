@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// Shadowlatch: the room code IS the document id. Clients may fetch a room only
+// by knowing its id (no list rule exists on /rooms), and nothing is readable
+// once the room has expired.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function roomPath(roomId) {
+      return /databases/$(database)/documents/rooms/$(roomId);
+    }
+    function live(roomId) {
+      return get(roomPath(roomId)).data.expireAt > request.time;
+    }
+    // Firestore cannot compute `request.time + 1h` from the client, so the client
+    // sends its own clock and the rules only accept values near the true target.
+    function near(ts, minutes) {
+      return ts >= request.time + duration.value(minutes - 10, 'm')
+        && ts <= request.time + duration.value(minutes + 10, 'm');
+    }
+
+    match /rooms/{roomId} {
+      // Fetch by exact id only, and only while alive. No `list`.
+      allow get: if signedIn() && resource.data.expireAt > request.time;
+
+      // 12 chars from a 32-symbol alphabet (60 bits), formed client-side.
+      allow create: if signedIn()
+        && roomId.matches('^[A-HJ-NP-Z2-9]{12}$')
+        && request.resource.data.keys().hasOnly(['createdAt', 'expireAt', 'last'])
+        && request.resource.data.createdAt == request.time
+        && near(request.resource.data.expireAt, 60)
+        && request.resource.data.last == '';
+
+      // Either slide the expiry in the same batch as a new message (the room's
+      // `last` pointer must name a message created in this very write), or burn it.
+      allow update: if signedIn() && resource.data.expireAt > request.time && (
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['expireAt', 'last'])
+          && near(request.resource.data.expireAt, 60)
+          && !exists(/databases/$(database)/documents/rooms/$(roomId)/messages/$(request.resource.data.last))
+          && existsAfter(/databases/$(database)/documents/rooms/$(roomId)/messages/$(request.resource.data.last))
+          && getAfter(/databases/$(database)/documents/rooms/$(roomId)/messages/$(request.resource.data.last)).data.uid == request.auth.uid
+        ) || (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['expireAt'])
+          && request.resource.data.expireAt == request.time
+        )
+      );
+
+      // Anyone holding the code may sweep a room that has already expired.
+      allow delete: if signedIn() && resource.data.expireAt <= request.time;
+
+      match /messages/{msgId} {
+        allow get: if signedIn() && live(roomId);
+        allow list: if signedIn() && live(roomId) && request.query.limit <= 300;
+
+        allow create: if signedIn()
+          && live(roomId)
+          && msgId.matches('^[A-Za-z0-9]{20}$')
+          && getAfter(roomPath(roomId)).data.last == msgId
+          && request.resource.data.keys().hasOnly(['uid', 'kind', 'body', 'createdAt', 'expireAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.kind in ['text', 'code']
+          && request.resource.data.body is string
+          && request.resource.data.body.size() > 0
+          && request.resource.data.body.size() <= 20000
+          && request.resource.data.createdAt == request.time
+          && near(request.resource.data.expireAt, 1440);
+
+        // Messages are immutable; they can only be swept after the room expired.
+        allow update: if false;
+        allow delete: if signedIn()
+          && (!exists(roomPath(roomId)) || !live(roomId));
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

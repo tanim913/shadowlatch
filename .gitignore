@@ -1,0 +1,4 @@
+node_modules/
+vendor/emulator.js
+.firebase/
+*.log
