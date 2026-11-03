@@ -296,21 +296,22 @@ main { flex: 1; display: flex; flex-direction: column; }
 
 .room {
   flex: 1;
-  display: grid; grid-template-rows: 1fr auto;
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 1fr auto;
   width: min(100%, 60rem);
+  min-width: 0;
   margin-inline: auto;
 }
 
-.feed { padding: 1.5rem var(--pad) 2rem; outline: none; }
+.feed { min-width: 0; padding: 1.5rem var(--pad) 2rem; outline: none; }
 
 .empty { max-width: 32rem; margin: clamp(1.5rem, 8vh, 4rem) auto 0; text-align: center; }
 .empty h2 { font-size: clamp(1.75rem, 1rem + 3vw, 2.5rem); font-weight: 800; letter-spacing: -0.03em; color: var(--main); line-height: 1.05; }
 .empty p { margin: 0.75rem 0 1.5rem; color: var(--ink-soft); text-wrap: pretty; }
 .msgs:not(:empty) ~ .empty, .has-msgs .empty { display: none; }
 
-.msgs { display: flex; flex-direction: column; gap: 1.5rem; }
+.msgs { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
 
-.msg { width: min(100%, 46rem); animation: register 420ms var(--ease) both; }
+.msg { width: min(100%, 46rem); min-width: 0; animation: register 420ms var(--ease) both; }
 .msg--me { margin-left: auto; }
 .msg__head {
   display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;
@@ -323,6 +324,13 @@ main { flex: 1; display: flex; flex-direction: column; }
 .msg__time { font-variant-numeric: tabular-nums; }
 
 .msg__text { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 68ch; line-height: 1.55; }
+.msg__text.is-clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 12; line-clamp: 12; overflow: hidden; }
+.msg__more {
+  display: inline-flex; align-items: center; min-height: 2.25rem; margin-top: 0.15rem; padding: 0 0.1rem;
+  border: 0; background: none; color: var(--main); font-weight: 700; font-size: var(--step--1);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.msg--me .msg__more { margin-left: auto; display: flex; }
 .msg--me .msg__text { margin-left: auto; text-align: left; }
 .msg__text + .code, .code + .msg__text, .code + .code { margin-top: 0.6rem; }
 
@@ -330,7 +338,7 @@ main { flex: 1; display: flex; flex-direction: column; }
   --ink-c: var(--other);
   --dots: var(--dots-other);
   border: 2px solid var(--ink-c); border-radius: 2px; background: var(--paper-hi);
-  overflow: hidden;
+  overflow: hidden; min-width: 0; max-width: 100%;
 }
 .msg--me .code { --ink-c: var(--main); --dots: var(--dots-main); }
 .code__bar {
@@ -351,7 +359,8 @@ main { flex: 1; display: flex; flex-direction: column; }
 .code__copy:hover { background: var(--paper-lo); }
 .code__copy .ico { width: 1rem; height: 1rem; }
 .code pre {
-  margin: 0; padding: 0.9rem 1rem; max-height: 28rem; overflow: auto; tab-size: 2;
+  margin: 0; padding: 0.9rem 1rem; max-height: min(28rem, 60vh); overflow: auto; tab-size: 2;
+  max-width: 100%; overscroll-behavior: contain;
   font: 400 0.875rem / 1.6 var(--mono); color: var(--ink);
   scrollbar-color: var(--ink-c) transparent;
 }
@@ -385,7 +394,7 @@ main { flex: 1; display: flex; flex-direction: column; }
 
 .composer__row { display: flex; align-items: flex-end; gap: 0.6rem; }
 .composer textarea {
-  flex: 1; min-width: 0; min-height: 2.75rem; max-height: 40vh; resize: none; padding: 0.6rem 0.85rem;
+  flex: 1; min-width: 0; min-height: 2.75rem; max-height: 40vh; overflow-y: auto; resize: none; overflow-y: auto; padding: 0.6rem 0.85rem;
   background: var(--paper-hi); border: 2px solid var(--ink); border-radius: 2px; line-height: 1.5;
   scrollbar-color: var(--main) transparent;
 }
@@ -431,6 +440,7 @@ main { flex: 1; display: flex; flex-direction: column; }
 }
 
 @media (max-width: 40rem) {
+  .bar { position: static; } /* three rows tall on phones: let it scroll away, the composer stays pinned */
   .theme { margin-left: auto; }
   .room-tools { order: 3; width: 100%; margin-left: 0; justify-content: space-between; }
   .btn--quiet span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }

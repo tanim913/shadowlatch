@@ -284,6 +284,20 @@ function buildMessage(id, d) {
   return li;
 }
 
+// Long text collapses to 12 lines with a Show more toggle; short text is left alone.
+function clampLong(p) {
+  p.classList.add("is-clamped");
+  if (p.scrollHeight <= p.clientHeight + 1) { p.classList.remove("is-clamped"); return; }
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "msg__more"; btn.textContent = "Show more"; btn.setAttribute("aria-expanded", "false");
+  btn.addEventListener("click", () => {
+    const open = p.classList.toggle("is-clamped") === false;
+    btn.textContent = open ? "Show less" : "Show more";
+    btn.setAttribute("aria-expanded", String(open));
+  });
+  p.after(btn);
+}
+
 function renderMessages(s, docs) {
   if (session !== s) return;
   const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
@@ -299,6 +313,7 @@ function renderMessages(s, docs) {
     const node = buildMessage(d.id, data);
     if (s.initial) node.style.animation = "none";
     el.msgs.append(node);
+    node.querySelectorAll(".msg__text").forEach(clampLong);
   });
   [...el.msgs.children].forEach((n) => { if (!seen.has(n.dataset.id)) n.remove(); });
   s.initial = false;
@@ -343,7 +358,8 @@ async function sendMessage() {
 
 function autosize() {
   el.draft.style.height = "auto";
-  el.draft.style.height = `${Math.min(el.draft.scrollHeight + 4, window.innerHeight * 0.4)}px`;
+  const share = window.innerWidth < 640 ? 0.28 : 0.4; // leave the chat visible above a long draft on phones
+  el.draft.style.height = `${Math.min(el.draft.scrollHeight + 4, window.innerHeight * share)}px`;
 }
 function updateSend() { el.send.disabled = !el.draft.value.trim(); }
 
